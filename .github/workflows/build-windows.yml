@@ -14,6 +14,8 @@ jobs:
   build-windows:
     runs-on: windows-2022
     timeout-minutes: 60
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,15 +37,32 @@ jobs:
       - name: Run tests (typecheck + smoke + logic)
         run: npm run test
 
-      - name: Build Windows installers (NSIS + Portable)
+      - name: Build NSIS installer
+        timeout-minutes: 25
+        shell: cmd
+        run: |
+          npx electron-builder --win nsis --x64 --publish never > electron-builder-nsis.log 2>&1
+          type electron-builder-nsis.log
+          if errorlevel 1 exit /b 1
+
+      - name: Build Portable exe
+        timeout-minutes: 25
+        shell: cmd
+        run: |
+          npx electron-builder --win portable --x64 --publish never > electron-builder-portable.log 2>&1
+          type electron-builder-portable.log
+          if errorlevel 1 exit /b 1
+
+      - name: Combine logs
+        if: always()
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Continue'
-          npx electron-builder --win --x64 --publish never 2>&1 | Tee-Object -FilePath electron-builder.log
-          "EXIT_CODE=$LASTEXITCODE" | Tee-Object -FilePath ci-status.txt
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          $parts = @()
+          foreach ($f in @('electron-builder-nsis.log','electron-builder-portable.log')) {
+            if (Test-Path $f) { $parts += "===== $f ====="; $parts += (Get-Content $f -Raw) }
+          }
+          $parts -join "`n" | Out-File -Encoding utf8 electron-builder.log
+          "EXIT_CODE=see-above" | Out-File -Encoding utf8 ci-status.txt
 
       - name: List release files
         if: always()
@@ -52,7 +71,7 @@ jobs:
           if (Test-Path release) {
             Get-ChildItem -Recurse release | Select-Object FullName, Length | Format-Table -AutoSize | Out-String | Tee-Object -FilePath release-listing.txt
           } else {
-            "no release dir" | Tee-Object -FilePath release-listing.txt
+            "no release dir" | Out-File -Encoding utf8 release-listing.txt
           }
 
       - name: Create GitHub Release with EXE installers
@@ -62,8 +81,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete wincode-ai-v1.0.0 --yes 2>$null
-          gh release create wincode-ai-v1.0.0 --title "WinCode AI v1.0.0 (Windows)" --notes "WinCode-AI-Setup.exe — installer (NSIS). WinCode-AI-Portable.exe — portable build. Built by CI on windows-latest."
+          gh release create wincode-ai-v1.0.0 --title "WinCode AI v1.0.0 (Windows)" --notes "WinCode-AI-Setup.exe — installer (NSIS). WinCode-AI-Portable.exe — portable build. Built by CI."
           gh release upload wincode-ai-v1.0.0 release/WinCode-AI-Setup.exe release/WinCode-AI-Portable.exe --clobber
+
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wincode-ai-windows
+          path: |
+            release/WinCode-AI-Setup.exe
+            release/WinCode-AI-Portable.exe
+          if-no-files-found: error
 
       - name: Post diagnostics (issue #1 / Contents API / git)
         if: always()
@@ -74,18 +103,3 @@ jobs:
           REPO: ${{ github.repository }}
           CI_BRANCH: ${{ github.ref_name }}
         run: node scripts/ci-report.mjs
-
-      - name: Commit diagnostics to branch (so logs are visible via git)
-        if: always()
-        continue-on-error: true
-        shell: pwsh
-        env:
-          CI_BRANCH: ${{ github.ref_name }}
-        run: |
-          git config user.name "wincode-ci"
-          git config user.email "ci@wincode.ai"
-          if (Test-Path electron-builder.log) { git add -f electron-builder.log }
-          if (Test-Path release-listing.txt) { git add -f release-listing.txt }
-          if (Test-Path ci-status.txt) { git add -f ci-status.txt }
-          git commit -m "CI diagnostics [skip ci]" --allow-empty
-          git push origin "HEAD:${CI_BRANCH}"

@@ -73,6 +73,10 @@
       "package.json"
     ],
     "asar": true,
+    "asarUnpack": [
+      "**/node_modules/node-pty/**"
+    ],
+    "npmRebuild": false,
     "win": {
       "target": [
         {
