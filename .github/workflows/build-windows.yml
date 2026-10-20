@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -13,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -26,56 +31,49 @@ jobs:
       - name: Build renderer & main
         run: npm run build
 
-      - name: Run smoke tests
-        run: npm run smoke
+      - name: Run tests (typecheck + smoke + logic)
+        run: npm run test
 
       - name: Build Windows installers (NSIS + Portable)
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Continue'
           npx electron-builder --win --x64 --publish never 2>&1 | Tee-Object -FilePath electron-builder.log
-          if ($LASTEXITCODE -ne 0) { Write-Error "electron-builder failed with $LASTEXITCODE"; exit $LASTEXITCODE }
+          "EXIT_CODE=$LASTEXITCODE" | Tee-Object -FilePath ci-status.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload electron-builder log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: electron-builder-log
-          path: electron-builder.log
-          if-no-files-found: ignore
-
-      - name: List artifacts
+      - name: List release files
         if: always()
         shell: pwsh
         run: |
-          if (Test-Path release) { Get-ChildItem -Recurse release | Select-Object FullName, Length | Format-Table -AutoSize | Out-String | Tee-Object -FilePath release-listing.txt } else { "no release dir" | Tee-Object -FilePath release-listing.txt }
+          if (Test-Path release) {
+            Get-ChildItem -Recurse release | Select-Object FullName, Length | Format-Table -AutoSize | Out-String | Tee-Object -FilePath release-listing.txt
+          } else {
+            "no release dir" | Tee-Object -FilePath release-listing.txt
+          }
 
-      - name: Upload listing
+      - name: Create GitHub Release with EXE installers
+        if: success()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete wincode-ai-v1.0.0 --yes 2>$null
+          gh release create wincode-ai-v1.0.0 --title "WinCode AI v1.0.0 (Windows)" --notes "WinCode-AI-Setup.exe — installer (NSIS). WinCode-AI-Portable.exe — portable build. Built by CI on windows-latest."
+          gh release upload wincode-ai-v1.0.0 release/WinCode-AI-Setup.exe release/WinCode-AI-Portable.exe --clobber
+
+      - name: Commit diagnostics to branch (so logs are visible via git)
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-listing
-          path: release-listing.txt
-          if-no-files-found: ignore
-
-      - name: Upload WinCode-AI-Setup.exe
-        uses: actions/upload-artifact@v4
-        with:
-          name: WinCode-AI-Setup
-          path: release/WinCode-AI-Setup.exe
-          if-no-files-found: error
-
-      - name: Upload WinCode-AI-Portable.exe
-        uses: actions/upload-artifact@v4
-        with:
-          name: WinCode-AI-Portable
-          path: release/WinCode-AI-Portable.exe
-          if-no-files-found: error
-
-      - name: Upload full release directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: wincode-ai-release-full
-          path: release/
-          if-no-files-found: error
+        shell: pwsh
+        env:
+          CI_BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "wincode-ci"
+          git config user.email "ci@wincode.ai"
+          if (Test-Path electron-builder.log) { git add -f electron-builder.log }
+          if (Test-Path release-listing.txt) { git add -f release-listing.txt }
+          if (Test-Path ci-status.txt) { git add -f ci-status.txt }
+          git commit -m "CI diagnostics [skip ci]" --allow-empty
+          git push origin "HEAD:${CI_BRANCH}"
