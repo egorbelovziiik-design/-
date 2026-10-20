@@ -162,7 +162,29 @@ export function getSettings(): WinCodeSettings {
 }
 
 export function setSettings(patch: Partial<WinCodeSettings>): WinCodeSettings {
-  return settingsStore().update(patch);
+  const s = settingsStore();
+  const current = s.get();
+  const merged: WinCodeSettings = { ...current, ...patch };
+
+  // Never let a renderer-side patch erase encrypted provider secrets:
+  // merge providers by id, preserving apiKeyEnc/hasApiKey from the current store.
+  if (patch.ai?.providers) {
+    const prevById = new Map(current.ai.providers.map((p) => [p.id, p]));
+    merged.ai = {
+      ...current.ai,
+      ...patch.ai,
+      providers: patch.ai.providers.map((p) => {
+        const prev = prevById.get(p.id);
+        return {
+          ...p,
+          apiKeyEnc: prev?.apiKeyEnc,
+          hasApiKey: Boolean(prev?.apiKeyEnc),
+        };
+      }),
+    };
+  }
+
+  return s.replace(merged);
 }
 
 export function resetSettings(): WinCodeSettings {

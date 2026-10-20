@@ -89,8 +89,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "WinCode AI",
       "artifactName": "WinCode-AI-Setup.${ext}",
-      "uninstallDisplayName": "WinCode AI",
-      "license": null
+      "uninstallDisplayName": "WinCode AI"
     },
     "portable": {
       "artifactName": "WinCode-AI-Portable.${ext}"

@@ -17,6 +17,8 @@ export default function GitPanel() {
   const [branches, setBranches] = useState<{ name: string; current: boolean; remote: boolean }[]>([]);
   const [cloneOpen, setCloneOpen] = useState(false);
   const [cloneUrl, setCloneUrl] = useState('');
+  const [branchOpen, setBranchOpen] = useState(false);
+  const [newBranch, setNewBranch] = useState('');
 
   useEffect(() => {
     if (!root) return;
@@ -58,14 +60,42 @@ export default function GitPanel() {
         <>
           <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: '1px solid var(--wc-border)' }}>
             <GitBranch size={13} color="var(--wc-neon)" />
-            <select
+            {branchOpen ? (
+              <div className="flex flex-1 gap-1.5">
+                <input
+                  autoFocus
+                  className="wc-input flex-1 py-1 text-[11px]"
+                  placeholder="new-branch-name"
+                  value={newBranch}
+                  onChange={(e) => setNewBranch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newBranch.trim()) {
+                      void run('Create branch', () => window.wincode.gitCreateBranch(root, newBranch.trim()));
+                      setBranchOpen(false);
+                      setNewBranch('');
+                    }
+                    if (e.key === 'Escape') setBranchOpen(false);
+                  }}
+                />
+                <button
+                  className="wc-btn py-1 text-[10px]"
+                  onClick={() => {
+                    if (newBranch.trim()) void run('Create branch', () => window.wincode.gitCreateBranch(root, newBranch.trim()));
+                    setBranchOpen(false);
+                    setNewBranch('');
+                  }}
+                >
+                  Create
+                </button>
+              </div>
+            ) : (
+              <select
               className="wc-input flex-1 py-1 text-[11.5px]"
               value={branch}
               onFocus={async () => setBranches(await window.wincode.gitBranches(root).catch(() => []))}
               onChange={(e) => {
                 if (e.target.value === '__new__') {
-                  const name = prompt('New branch name:');
-                  if (name) void run('Create branch', () => window.wincode.gitCreateBranch(root, name));
+                  setBranchOpen(true);
                 } else {
                   void run('Checkout', () => window.wincode.gitCheckout(root, e.target.value));
                 }
@@ -79,6 +109,7 @@ export default function GitPanel() {
                 ))}
               <option value="__new__">+ New branch…</option>
             </select>
+            )}
             {(ahead > 0 || behind > 0) && (
               <span className="text-[10px]" style={{ color: 'var(--wc-muted)' }}>
                 ↑{ahead} ↓{behind}

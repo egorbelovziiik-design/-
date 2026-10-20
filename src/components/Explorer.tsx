@@ -114,16 +114,29 @@ export default function Explorer() {
   const doCreate = async (kind: 'file' | 'dir', base: FileNode | null) => {
     setCtx(null);
     const parent = base && base.isDir ? base.path : base ? base.path.split(/[\\/]/).slice(0, -1).join('/') : workspaceRoot;
-    const name = prompt(kind === 'file' ? 'New file name:' : 'New folder name:');
-    if (!name || !parent) return;
-    try {
-      await window.wincode.createNode(`${parent}/${name}`, kind);
-      await refresh();
-      if (kind === 'file') await useApp.getState().openFile(`${parent}/${name}`);
-      notify('success', `Created ${name}`);
-    } catch (err) {
-      notify('error', `Create failed`, (err as Error).message);
+    if (!parent) return;
+    // window.prompt() is unavailable in Electron — create with a default name
+    // and immediately enter inline rename mode. If the name exists, add a suffix.
+    const baseName = kind === 'file' ? 'Untitled.txt' : 'New Folder';
+    let name = baseName;
+    let candidate = `${parent}/${name}`;
+    let created = false;
+    for (let n = 1; n < 50 && !created; n++) {
+      try {
+        await window.wincode.createNode(candidate, kind);
+        created = true;
+      } catch {
+        name = kind === 'file' ? `Untitled-${n}.txt` : `New Folder-${n}`;
+        candidate = `${parent}/${name}`;
+      }
     }
+    if (!created) {
+      notify('error', 'Create failed', 'Could not find a free file name');
+      return;
+    }
+    await refresh();
+    setRenaming(candidate);
+    setNewName(name);
   };
 
   const doRename = async (node: FileNode) => {

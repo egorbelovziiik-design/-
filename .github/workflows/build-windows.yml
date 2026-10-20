@@ -30,13 +30,34 @@ jobs:
         run: npm run smoke
 
       - name: Build Windows installers (NSIS + Portable)
-        run: npx electron-builder --win --x64
+        shell: pwsh
+        run: |
+          npx electron-builder --win --x64 --publish never 2>&1 | Tee-Object -FilePath electron-builder.log
+          if ($LASTEXITCODE -ne 0) { Write-Error "electron-builder failed with $LASTEXITCODE"; exit $LASTEXITCODE }
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Upload electron-builder log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-builder-log
+          path: electron-builder.log
+          if-no-files-found: ignore
+
       - name: List artifacts
+        if: always()
+        shell: pwsh
         run: |
-          Get-ChildItem -Recurse release | Select-Object FullName, Length
+          if (Test-Path release) { Get-ChildItem -Recurse release | Select-Object FullName, Length | Format-Table -AutoSize | Out-String | Tee-Object -FilePath release-listing.txt } else { "no release dir" | Tee-Object -FilePath release-listing.txt }
+
+      - name: Upload listing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-listing
+          path: release-listing.txt
+          if-no-files-found: ignore
 
       - name: Upload WinCode-AI-Setup.exe
         uses: actions/upload-artifact@v4
