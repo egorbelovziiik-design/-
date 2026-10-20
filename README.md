@@ -9,12 +9,12 @@
 
 ## 📦 Установка (Windows 10 / 11)
 
-**Готовые сборки (GitHub Release `wincode-ai-v1.0.0`, собрано CI на windows-2022):**
+**Готовые сборки (GitHub Release `wincode-ai-v1.1.0`, собрано CI на windows-2022):**
 
 | Файл | Размер | Назначение | Ссылка |
 |---|---|---|---|
-| `WinCode-AI-Setup.exe` | ~100 МБ | Установщик NSIS: выбор папки, ярлыки, меню «Пуск», удаление | [скачать](https://github.com/egorbelovziiik-design/-/releases/download/wincode-ai-v1.0.0/WinCode-AI-Setup.exe) |
-| `WinCode-AI-Portable.exe` | ~84 МБ | Портативная версия без установки | [скачать](https://github.com/egorbelovziiik-design/-/releases/download/wincode-ai-v1.0.0/WinCode-AI-Portable.exe) |
+| `WinCode-AI-Setup.exe` | ~100 МБ | Установщик NSIS: выбор папки, ярлыки, меню «Пуск», удаление | [скачать](https://github.com/egorbelovziiik-design/-/releases/latest/download/WinCode-AI-Setup.exe) |
+| `WinCode-AI-Portable.exe` | ~84 МБ | Портативная версия без установки | [скачать](https://github.com/egorbelovziiik-design/-/releases/latest/download/WinCode-AI-Portable.exe) |
 
 Те же файлы лежат в артефакте запуска Actions `wincode-ai-windows`
 (страница запуска: [Build Windows EXE](https://github.com/egorbelovziiik-design/-/actions/workflows/build-windows.yml)).
@@ -46,8 +46,12 @@ npm run dist        # соберёт оба EXE в release/WinCode-AI-Setup.exe 
   через safeStorage (DPAPI), удаление только в Корзину, подтверждение опасных операций
 
 ### WinCode Intelligence (AI) — **реальные запросы к моделям, без имитации**
-- ✅ Провайдеры: **OpenAI, Anthropic Claude, Google Gemini, OpenRouter, Ollama, LM Studio, любой OpenAI-compatible**
-  (API Key, Base URL, модель, температура, контекст) — streaming (SSE) + tool calling
+- ✅ Провайдеры (**21 пресет + любые кастомные**): **OpenAI, Anthropic Claude, Google Gemini, DeepSeek (V3/R1), xAI Grok,
+  Mistral (Large/Codestral), Groq, Moonshot Kimi (K2), Zhipu GLM-4.6, Alibaba Qwen/DashScope, MiniMax M2, Cohere Command,
+  Perplexity Sonar, Together AI, Fireworks AI, NVIDIA NIM, Hugging Face, GitHub Models, Azure OpenAI, OpenRouter, Ollama,
+  LM Studio** и любой OpenAI-compatible эндпоинт (API Key, Base URL, модель, температура, контекст) — streaming (SSE) + tool calling
+- ✅ Библиотека провайдеров в настройках: поиск, группы (Cloud / Aggregators / Local), быстрый выбор модели из каталога,
+  определение провайдера по префиксу ключа, «Get API key», тест соединения со списком моделей, добавление кастомных провайдеров
 - ✅ AI Chat с потоковым выводом и прикреплением текущего файла
 - ✅ **AI Agent Mode** — реально выполняет инструменты: `read_file`, `write_file`, `list_dir`, `search_files`,
   `create_directory`, `run_command`, `delete_path`, `update_memory`, `save_plan`, `finish`
@@ -85,7 +89,7 @@ npm run logic       # unit-тесты сервисного слоя (шабло�
 
 | Функция | Статус |
 |---|---|
-| Запуск на Windows 10/11 (EXE) | ✅ `WinCode-AI-Setup.exe` (105 МБ) и `WinCode-AI-Portable.exe` (88 МБ) собраны и опубликованы в [Release](https://github.com/egorbelovziiik-design/-/releases/tag/wincode-ai-v1.0.0) |
+| Запуск на Windows 10/11 (EXE) | ✅ `WinCode-AI-Setup.exe` (~105 МБ) и `WinCode-AI-Portable.exe` (~88 МБ) собираются CI и публикуются в [Release](https://github.com/egorbelovziiik-design/-/releases/latest) |
 | Создание/открытие проектов, файлы, сохранение | ✅ |
 | Терминал (xterm.js + node-pty) | ✅ |
 | AI Chat + реальные AI-провайдеры + streaming | ✅ |

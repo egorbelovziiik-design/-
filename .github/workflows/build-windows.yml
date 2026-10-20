@@ -80,9 +80,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete wincode-ai-v1.0.0 --yes 2>$null
-          gh release create wincode-ai-v1.0.0 --title "WinCode AI v1.0.0 (Windows)" --notes "WinCode-AI-Setup.exe — installer (NSIS). WinCode-AI-Portable.exe — portable build. Built by CI."
-          gh release upload wincode-ai-v1.0.0 release/WinCode-AI-Setup.exe release/WinCode-AI-Portable.exe --clobber
+          $ver = (Get-Content package.json | ConvertFrom-Json).version
+          $tag = "wincode-ai-v$ver"
+          gh release delete $tag --yes 2>$null
+          gh release create $tag --title "WinCode AI v$ver (Windows)" --notes "WinCode-AI-Setup.exe — installer (NSIS). WinCode-AI-Portable.exe — portable build. Built by CI."
+          gh release upload $tag release/WinCode-AI-Setup.exe release/WinCode-AI-Portable.exe --clobber
 
       - name: Upload artifacts
         if: success()

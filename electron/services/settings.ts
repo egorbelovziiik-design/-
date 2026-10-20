@@ -3,6 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { JsonStore } from './store';
 import type { WinCodeSettings, AIProviderConfig } from '../shared/types';
+import { PROVIDER_CATALOG, presetToConfig } from '../shared/providers-catalog';
 
 export const DEFAULT_SETTINGS: WinCodeSettings = {
   appearance: {
@@ -29,74 +30,7 @@ export const DEFAULT_SETTINGS: WinCodeSettings = {
   },
   ai: {
     activeProviderId: 'openai',
-    providers: [
-      {
-        id: 'openai',
-        name: 'OpenAI',
-        kind: 'openai',
-        baseUrl: 'https://api.openai.com/v1',
-        model: 'gpt-4o',
-        hasApiKey: false,
-        temperature: 0.4,
-        maxContextTokens: 128000,
-        enabled: true,
-      },
-      {
-        id: 'claude',
-        name: 'Anthropic Claude',
-        kind: 'anthropic',
-        baseUrl: 'https://api.anthropic.com/v1',
-        model: 'claude-sonnet-4-5',
-        hasApiKey: false,
-        temperature: 0.4,
-        maxContextTokens: 200000,
-        enabled: true,
-      },
-      {
-        id: 'gemini',
-        name: 'Google Gemini',
-        kind: 'gemini',
-        baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
-        model: 'gemini-2.0-flash',
-        hasApiKey: false,
-        temperature: 0.4,
-        maxContextTokens: 1000000,
-        enabled: true,
-      },
-      {
-        id: 'openrouter',
-        name: 'OpenRouter',
-        kind: 'openrouter',
-        baseUrl: 'https://openrouter.ai/api/v1',
-        model: 'anthropic/claude-sonnet-4.5',
-        hasApiKey: false,
-        temperature: 0.4,
-        maxContextTokens: 128000,
-        enabled: true,
-      },
-      {
-        id: 'ollama',
-        name: 'Ollama (local)',
-        kind: 'ollama',
-        baseUrl: 'http://127.0.0.1:11434/v1',
-        model: 'qwen2.5-coder:14b',
-        hasApiKey: false,
-        temperature: 0.3,
-        maxContextTokens: 32768,
-        enabled: true,
-      },
-      {
-        id: 'lmstudio',
-        name: 'LM Studio (local)',
-        kind: 'lmstudio',
-        baseUrl: 'http://127.0.0.1:1234/v1',
-        model: 'local-model',
-        hasApiKey: false,
-        temperature: 0.3,
-        maxContextTokens: 32768,
-        enabled: true,
-      },
-    ] as AIProviderConfig[],
+    providers: PROVIDER_CATALOG.map(presetToConfig),
     inlineCompletion: true,
     inlineCompletionDelayMs: 400,
     agentAutoApproveSafe: true,
@@ -150,9 +84,23 @@ export const DEFAULT_SETTINGS: WinCodeSettings = {
 
 let store: JsonStore<WinCodeSettings> | null = null;
 
+/**
+ * Migration: when new provider presets appear in the catalog, add them to the
+ * user's existing settings without touching configured providers/keys.
+ */
+function mergeProviderPresets(s: JsonStore<WinCodeSettings>): void {
+  const cur = s.get();
+  const known = new Set(cur.ai.providers.map((p) => p.id));
+  const missing = PROVIDER_CATALOG.filter((p) => !known.has(p.id));
+  if (missing.length === 0) return;
+  cur.ai.providers = [...cur.ai.providers, ...missing.map(presetToConfig)];
+  s.replace(cur);
+}
+
 export function settingsStore(): JsonStore<WinCodeSettings> {
   if (!store) {
     store = new JsonStore<WinCodeSettings>(path.join(app.getPath('userData'), 'settings.json'), DEFAULT_SETTINGS);
+    mergeProviderPresets(store);
   }
   return store;
 }

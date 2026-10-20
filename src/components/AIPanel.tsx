@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useApp, type AgentLogEntry } from '../state/store';
 import type { AgentMode, AIMessage } from '@shared/types';
+import { PROVIDER_CATALOG, GROUP_LABELS } from '@shared/providers-catalog';
 
 const MODES: { id: AgentMode; title: string; desc: string }[] = [
   { id: 'ASK', title: 'ASK', desc: 'Answers only — no file changes' },
@@ -264,12 +265,25 @@ export default function AIPanel() {
               }
             }}
           >
-            {providers.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} — {p.model}
-                {!p.hasApiKey && p.kind !== 'ollama' && p.kind !== 'lmstudio' ? ' (no key)' : ''}
-              </option>
-            ))}
+            {(['cloud', 'aggregator', 'local'] as const).map((group) => {
+              const items = providers.filter((p) => {
+                const preset = PROVIDER_CATALOG.find((c) => c.id === p.id);
+                return (preset?.group ?? 'cloud') === group;
+              });
+              const extra = providers.filter((p) => !PROVIDER_CATALOG.some((c) => c.id === p.id));
+              if (group === 'cloud' && extra.length) items.push(...extra);
+              if (!items.length) return null;
+              return (
+                <optgroup key={group} label={GROUP_LABELS[group]}>
+                  {items.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} — {p.model}
+                      {!p.hasApiKey && p.kind !== 'ollama' && p.kind !== 'lmstudio' && p.kind !== 'custom' ? ' (no key)' : ''}
+                    </option>
+                  ))}
+                </optgroup>
+              );
+            })}
           </select>
           <div className="relative">
             <button className="wc-btn py-1 text-[10.5px]" onClick={() => setModeOpen(!modeOpen)}>

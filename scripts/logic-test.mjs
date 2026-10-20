@@ -136,5 +136,40 @@ await check('problem parser extracts java errors', () => {
   if (problems[0].line !== 12 || problems[0].severity !== 'error') throw new Error('bad parse');
 });
 
+await check('AI provider catalog is large, valid and unique', () => {
+  const cat = mod.PROVIDER_CATALOG;
+  if (cat.length < 20) throw new Error('catalog must have at least 20 providers, got ' + cat.length);
+  const ids = new Set();
+  for (const p of cat) {
+    if (ids.has(p.id)) throw new Error('duplicate provider id ' + p.id);
+    ids.add(p.id);
+    if (!/^https?:\/\//.test(p.baseUrl)) throw new Error(p.id + ': bad baseUrl');
+    if (!p.defaultModel) throw new Error(p.id + ': missing defaultModel');
+    if (!p.models.includes(p.defaultModel)) throw new Error(p.id + ': defaultModel not in models list');
+    const cfg = mod.presetToConfig(p);
+    if (cfg.id !== p.id || cfg.model !== p.defaultModel) throw new Error(p.id + ': presetToConfig mismatch');
+  }
+  for (const must of ['deepseek', 'xai', 'mistral', 'groq', 'moonshot', 'zhipu', 'qwen', 'minimax', 'cohere', 'perplexity', 'together', 'fireworks', 'huggingface', 'nvidia-nim', 'github-models']) {
+    if (!ids.has(must)) throw new Error('missing new provider preset ' + must);
+  }
+});
+
+await check('API key prefix hints work', () => {
+  const map = [
+    ['sk-ant-abc', 'claude'],
+    ['sk-or-abc', 'openrouter'],
+    ['gsk_abc', 'groq'],
+    ['xai-abc', 'xai'],
+    ['sk-abc', 'openai'],
+    ['nvapi-abc', 'nvidia-nim'],
+    ['hf_abc', 'huggingface'],
+    ['github_pat_abc', 'github-models'],
+  ];
+  for (const [key, expected] of map) {
+    const got = mod.guessProviderByKey(key);
+    if (got !== expected) throw new Error(`${key} -> ${got}, expected ${expected}`);
+  }
+});
+
 console.log(failures === 0 ? '[logic] ALL TESTS PASSED' : `[logic] ${failures} FAILURES`);
 process.exit(failures === 0 ? 0 : 1);

@@ -64,7 +64,7 @@ export interface WinCodeSettings {
 export interface AIProviderConfig {
   id: string;
   name: string;
-  kind: 'openai' | 'anthropic' | 'gemini' | 'ollama' | 'lmstudio' | 'openrouter' | 'custom';
+  kind: 'openai' | 'openai-compatible' | 'anthropic' | 'gemini' | 'ollama' | 'lmstudio' | 'openrouter' | 'custom';
   baseUrl: string;
   model: string;
   apiKeyEnc?: string;

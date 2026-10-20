@@ -17,9 +17,11 @@ import {
   XCircle,
   Loader2,
   Eye,
+  Plus,
 } from 'lucide-react';
 import { useApp } from '../state/store';
 import type { AIProviderConfig, WinCodeSettings } from '@shared/types';
+import { PROVIDER_CATALOG, GROUP_LABELS, findPreset, guessProviderByKey } from '@shared/providers-catalog';
 
 const sections = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -228,12 +230,13 @@ function AISection({ settings, notify }: { settings: WinCodeSettings; notify: (k
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string; latencyMs: number } | null>(null);
   const [testing, setTesting] = useState(false);
   const [models, setModels] = useState<string[]>([]);
+  const [query, setQuery] = useState('');
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customForm, setCustomForm] = useState({ name: '', baseUrl: '', model: '' });
 
   const refresh = async () => {
     const list = (await window.wincode.aiListProviders()) as unknown as AIProviderConfig[];
     setProviders(list);
-    const active = list.find((p) => p.id === activeId) ?? list[0];
-    if (active) setActiveId(active.id);
   };
 
   useEffect(() => {
@@ -242,147 +245,292 @@ function AISection({ settings, notify }: { settings: WinCodeSettings; notify: (k
   }, []);
 
   const active = providers.find((p) => p.id === activeId);
+  const activePreset = active ? findPreset(active.id) : undefined;
+  const q = query.toLowerCase();
+  const shownPresets = PROVIDER_CATALOG.filter(
+    (p) => !q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q) || p.models.some((m) => m.toLowerCase().includes(q)),
+  );
+
+  const setActive = async (id: string) => {
+    setActiveId(id);
+    setTestResult(null);
+    setModels([]);
+    setKeyInput('');
+    await useApp.getState().setSettings({ ai: { ...settings.ai, activeProviderId: id } });
+    await refresh();
+  };
 
   return (
-    <div>
-      <Row label="Active provider" hint="Used by chat, agent and inline completion">
-        <select
-          className="wc-input w-full"
-          value={activeId}
-          onChange={async (e) => {
-            const id = e.target.value;
-            setActiveId(id);
-            await useApp.getState().setSettings({ ai: { ...settings.ai, activeProviderId: id } });
-            await refresh();
-          }}
-        >
-          {providers.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </Row>
+    <div className="flex h-full min-h-0 gap-4">
+      {/* ---------- provider library ---------- */}
+      <div className="flex w-[290px] shrink-0 flex-col">
+        <div className="mb-2 text-[11px] font-semibold">
+          Provider library
+          <span className="ml-1.5 text-[10px] font-normal" style={{ color: 'var(--wc-muted)' }}>
+            {PROVIDER_CATALOG.length} available
+          </span>
+        </div>
+        <input className="wc-input mb-2 w-full text-[11px]" placeholder="Search providers or models…" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {(['cloud', 'aggregator', 'local'] as const).map((group) => {
+            const items = shownPresets.filter((p) => p.group === group);
+            if (!items.length) return null;
+            return (
+              <div key={group} className="mb-3">
+                <div className="mb-1 text-[9.5px] font-semibold uppercase tracking-wider" style={{ color: 'var(--wc-muted)' }}>
+                  {GROUP_LABELS[group]}
+                </div>
+                {items.map((preset) => {
+                  const conf = providers.find((p) => p.id === preset.id);
+                  const isActive = preset.id === activeId;
+                  return (
+                    <button
+                      key={preset.id}
+                      className="mb-1 w-full rounded-lg border p-2 text-left transition-colors"
+                      style={{
+                        borderColor: isActive ? 'var(--wc-accent)' : 'var(--wc-border)',
+                        background: isActive ? 'var(--wc-active)' : 'var(--wc-editor)',
+                      }}
+                      onClick={() => setActive(preset.id)}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="h-1.5 w-1.5 rounded-full"
+                          style={{ background: conf?.hasApiKey || preset.kind === 'ollama' || preset.kind === 'lmstudio' ? '#22C55E' : 'var(--wc-muted)' }}
+                        />
+                        <span className="text-[11px] font-medium">{preset.name}</span>
+                        <span className="ml-auto rounded px-1 text-[8.5px]" style={{ background: 'var(--wc-active)', color: 'var(--wc-neon)' }}>
+                          {preset.kind}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 line-clamp-2 text-[9px] leading-snug" style={{ color: 'var(--wc-muted)' }}>
+                        {preset.description}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
-      {active && (
-        <>
-          <Row label="Base URL">
-            <input
-              className="wc-input w-full font-mono text-[10.5px]"
-              value={active.baseUrl}
-              onChange={async (e) => {
-                await window.wincode.aiUpdateProvider(active.id, { baseUrl: e.target.value });
-              }}
-            />
-          </Row>
-          <Row label="Model">
-            {models.length > 0 ? (
-              <select
-                className="wc-input w-full"
-                value={active.model}
-                onChange={async (e) => {
-                  await window.wincode.aiUpdateProvider(active.id, { model: e.target.value });
-                  await refresh();
-                }}
-              >
-                {[active.model, ...models.filter((m) => m !== active.model)].map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                className="wc-input w-full font-mono text-[10.5px]"
-                value={active.model}
-                onChange={async (e) => {
-                  await window.wincode.aiUpdateProvider(active.id, { model: e.target.value });
-                }}
-              />
-            )}
-          </Row>
-          <Row label="Temperature" hint="0 = deterministic, 1 = creative">
-            <input
-              type="number"
-              step={0.1}
-              min={0}
-              max={2}
-              className="wc-input w-full"
-              value={active.temperature}
-              onChange={async (e) => {
-                await window.wincode.aiUpdateProvider(active.id, { temperature: Number(e.target.value) });
-              }}
-            />
-          </Row>
-          <Row label="API key" hint={active.hasApiKey ? 'Key saved securely (encrypted via OS keychain)' : 'Stored encrypted with Electron safeStorage'}>
-            <div className="flex gap-1.5">
-              <input
-                type="password"
-                className="wc-input flex-1"
-                placeholder={active.hasApiKey ? '•••••••• (saved)' : 'sk-…'}
-                value={keyInput}
-                onChange={(e) => setKeyInput(e.target.value)}
-              />
-              <button
-                className="wc-btn text-[10.5px]"
-                onClick={async () => {
-                  if (!keyInput.trim()) return;
-                  await window.wincode.aiSetKey(active.id, keyInput.trim());
-                  setKeyInput('');
-                  await refresh();
-                  notify('success', 'API key saved securely');
-                }}
-              >
-                Save
-              </button>
+      {/* ---------- configuration ---------- */}
+      <div className="min-w-0 flex-1 overflow-y-auto">
+        {active ? (
+          <>
+            <div className="mb-3 flex items-center gap-2">
+              <div className="text-[13px] font-semibold">{active.name}</div>
+              <span className="rounded px-1.5 py-0.5 text-[9px]" style={{ background: 'var(--wc-active)', color: 'var(--wc-neon)' }}>
+                {active.kind}
+              </span>
+              {activePreset?.keyUrl && (
+                <button
+                  className="ml-auto text-[10px] underline"
+                  style={{ color: 'var(--wc-neon)' }}
+                  onClick={() => void window.wincode.showMessage({ title: 'Get API key', message: `Open in browser:\n${activePreset.keyUrl}`, buttons: ['OK'] })}
+                >
+                  Get API key →
+                </button>
+              )}
             </div>
-          </Row>
 
-          <div className="mb-4 flex gap-2">
-            <button
-              className="wc-btn text-[11px]"
-              disabled={testing}
-              onClick={async () => {
-                setTesting(true);
-                setTestResult(null);
-                try {
-                  const res = await window.wincode.aiTestProvider(active.id);
-                  setTestResult(res);
-                  if (res.models?.length) setModels(res.models);
-                } catch (err) {
-                  setTestResult({ ok: false, message: (err as Error).message, latencyMs: 0 });
-                } finally {
-                  setTesting(false);
-                }
-              }}
+            <Row label="Base URL">
+              <input
+                className="wc-input w-full font-mono text-[10px]"
+                value={active.baseUrl}
+                onChange={async (e) => {
+                  await window.wincode.aiUpdateProvider(active.id, { baseUrl: e.target.value });
+                  await refresh();
+                }}
+              />
+            </Row>
+
+            <Row label="Model" hint={activePreset ? `Quick pick · ${activePreset.models.length} known models` : 'Any model id'}>
+              <div className="space-y-1.5">
+                <select
+                  className="wc-input w-full text-[10.5px]"
+                  value={active.model}
+                  onChange={async (e) => {
+                    await window.wincode.aiUpdateProvider(active.id, { model: e.target.value });
+                    await refresh();
+                  }}
+                >
+                  {[active.model, ...(activePreset?.models ?? []).filter((m) => m !== active.model)].map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  className="wc-input w-full font-mono text-[10px]"
+                  placeholder="…or type a custom model id"
+                  onBlur={async (e) => {
+                    if (e.target.value.trim()) {
+                      await window.wincode.aiUpdateProvider(active.id, { model: e.target.value.trim() });
+                      e.target.value = '';
+                      await refresh();
+                    }
+                  }}
+                />
+              </div>
+            </Row>
+
+            <Row label="Temperature" hint="0 = deterministic, 1 = creative">
+              <input
+                type="number"
+                step={0.1}
+                min={0}
+                max={2}
+                className="wc-input w-full"
+                value={active.temperature}
+                onChange={async (e) => {
+                  await window.wincode.aiUpdateProvider(active.id, { temperature: Number(e.target.value) });
+                }}
+              />
+            </Row>
+
+            <Row
+              label="API key"
+              hint={
+                active.hasApiKey
+                  ? 'Saved securely (encrypted via OS keychain)'
+                  : keyInput && guessProviderByKey(keyInput)
+                    ? `Looks like a ${findPreset(guessProviderByKey(keyInput)!)?.name ?? 'known'} key`
+                    : 'Stored encrypted with Electron safeStorage'
+              }
             >
-              {testing ? <Loader2 size={11} className="spin" /> : <Eye size={11} />} Test connection
-            </button>
-            {testResult && (
-              <div className="flex items-center gap-1.5 text-[10.5px]" style={{ color: testResult.ok ? '#22C55E' : '#EF4444' }}>
-                {testResult.ok ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
-                {testResult.message} ({testResult.latencyMs} ms)
+              <div className="flex gap-1.5">
+                <input
+                  type="password"
+                  className="wc-input flex-1"
+                  placeholder={active.hasApiKey ? '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022 (saved)' : 'Paste API key…'}
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                />
+                <button
+                  className="wc-btn text-[10.5px]"
+                  onClick={async () => {
+                    if (!keyInput.trim()) return;
+                    await window.wincode.aiSetKey(active.id, keyInput.trim());
+                    setKeyInput('');
+                    await refresh();
+                    notify('success', 'API key saved securely');
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+            </Row>
+
+            <div className="mb-4 flex items-center gap-2">
+              <button
+                className="wc-btn text-[11px]"
+                disabled={testing}
+                onClick={async () => {
+                  setTesting(true);
+                  setTestResult(null);
+                  try {
+                    const res = await window.wincode.aiTestProvider(active.id);
+                    setTestResult(res);
+                    if (res.models?.length) setModels(res.models);
+                  } catch (err) {
+                    setTestResult({ ok: false, message: (err as Error).message, latencyMs: 0 });
+                  } finally {
+                    setTesting(false);
+                  }
+                }}
+              >
+                {testing ? <Loader2 size={11} className="spin" /> : <Eye size={11} />} Test connection
+              </button>
+              {testResult && (
+                <div className="flex items-center gap-1.5 text-[10px]" style={{ color: testResult.ok ? '#22C55E' : '#EF4444' }}>
+                  {testResult.ok ? <CheckCircle2 size={11} /> : <XCircle size={11} />}
+                  {testResult.message} ({testResult.latencyMs} ms)
+                </div>
+              )}
+            </div>
+
+            {models.length > 0 && (
+              <div className="mb-4">
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--wc-muted)' }}>
+                  Models reported by the API ({models.length})
+                </div>
+                <div className="flex max-h-[110px] flex-wrap gap-1 overflow-y-auto rounded-lg border p-2" style={{ borderColor: 'var(--wc-border)' }}>
+                  {models.slice(0, 60).map((m) => (
+                    <button
+                      key={m}
+                      className="rounded-full border px-2 py-0.5 text-[9px]"
+                      style={{ borderColor: active.model === m ? 'var(--wc-accent)' : 'var(--wc-border)', color: 'var(--wc-text)' }}
+                      onClick={async () => {
+                        await window.wincode.aiUpdateProvider(active.id, { model: m });
+                        await refresh();
+                      }}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-          </div>
-        </>
-      )}
 
-      <div className="my-2 h-px" style={{ background: 'var(--wc-border)' }} />
-      <Row label="Inline AI completion" hint="Ghost-text suggestions in the editor (Tab accepts)">
-        <Toggle
-          value={settings.ai.inlineCompletion}
-          onChange={async (v) => await useApp.getState().setSettings({ ai: { ...settings.ai, inlineCompletion: v } })}
-        />
-      </Row>
-      <Row label="Auto-approve safe agent tools" hint="File reads/searches run without prompts">
-        <Toggle
-          value={settings.ai.agentAutoApproveSafe}
-          onChange={async (v) => await useApp.getState().setSettings({ ai: { ...settings.ai, agentAutoApproveSafe: v } })}
-        />
-      </Row>
-      <div className="mt-3 rounded-lg border p-3 text-[10.5px] leading-relaxed" style={{ borderColor: 'var(--wc-border)', background: 'var(--wc-editor)', color: 'var(--wc-muted)' }}>
-        Supported: <b>OpenAI</b>, <b>Anthropic Claude</b>, <b>Google Gemini</b>, <b>OpenRouter</b>, <b>Ollama</b>,{' '}
-        <b>LM Studio</b>, and any <b>OpenAI-compatible</b> endpoint. Streaming and tool calling are enabled. Requests go
-        directly from the app to the provider API — no intermediate servers.
+            <div className="my-2 h-px" style={{ background: 'var(--wc-border)' }} />
+            <Row label="Inline AI completion" hint="Ghost-text suggestions in the editor (Tab accepts)">
+              <Toggle value={settings.ai.inlineCompletion} onChange={async (v) => await useApp.getState().setSettings({ ai: { ...settings.ai, inlineCompletion: v } })} />
+            </Row>
+            <Row label="Auto-approve safe agent tools" hint="File reads/searches run without prompts">
+              <Toggle value={settings.ai.agentAutoApproveSafe} onChange={async (v) => await useApp.getState().setSettings({ ai: { ...settings.ai, agentAutoApproveSafe: v } })} />
+            </Row>
+          </>
+        ) : (
+          <div className="text-[11px]" style={{ color: 'var(--wc-muted)' }}>
+            Select a provider on the left.
+          </div>
+        )}
+
+        {/* custom provider */}
+        <div className="mt-3 h-px" style={{ background: 'var(--wc-border)' }} />
+        <button className="wc-btn mt-3 text-[11px]" onClick={() => setCustomOpen(!customOpen)}>
+          <Plus size={11} /> Add custom provider
+        </button>
+        {customOpen && (
+          <div className="mt-2 space-y-2 rounded-lg border p-3" style={{ borderColor: 'var(--wc-border)', background: 'var(--wc-editor)' }}>
+            <input className="wc-input w-full text-[11px]" placeholder="Provider name" value={customForm.name} onChange={(e) => setCustomForm({ ...customForm, name: e.target.value })} />
+            <input className="wc-input w-full font-mono text-[10px]" placeholder="Base URL — https://api.example.com/v1" value={customForm.baseUrl} onChange={(e) => setCustomForm({ ...customForm, baseUrl: e.target.value })} />
+            <input className="wc-input w-full font-mono text-[10px]" placeholder="Default model id" value={customForm.model} onChange={(e) => setCustomForm({ ...customForm, model: e.target.value })} />
+            <button
+              className="wc-btn wc-btn-primary w-full justify-center text-[11px]"
+              disabled={!customForm.name.trim() || !customForm.baseUrl.trim()}
+              onClick={async () => {
+                const id = 'custom-' + customForm.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString(36);
+                await window.wincode.aiAddProvider({
+                  id,
+                  name: customForm.name.trim(),
+                  kind: 'custom',
+                  baseUrl: customForm.baseUrl.trim(),
+                  model: customForm.model.trim() || 'custom-model',
+                  hasApiKey: false,
+                  temperature: 0.4,
+                  maxContextTokens: 128000,
+                  enabled: true,
+                });
+                setCustomOpen(false);
+                setCustomForm({ name: '', baseUrl: '', model: '' });
+                await refresh();
+                await setActive(id);
+                notify('success', 'Custom provider added');
+              }}
+            >
+              Add provider
+            </button>
+          </div>
+        )}
+
+        <div className="mt-3 rounded-lg border p-3 text-[10px] leading-relaxed" style={{ borderColor: 'var(--wc-border)', background: 'var(--wc-editor)', color: 'var(--wc-muted)' }}>
+          Requests go directly from the app to the selected provider API — no intermediate servers. Streaming and tool
+          calling are supported wherever the provider API supports them. Keys are encrypted with the OS credential
+          vault (DPAPI on Windows).
+        </div>
       </div>
     </div>
   );

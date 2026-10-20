@@ -1,7 +1,7 @@
 {
   "name": "wincode-ai",
   "productName": "WinCode AI",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "WinCode AI — professional AI-powered IDE for Windows (Java, Kotlin, Minecraft, Web, AI Agent)",
   "main": "dist-electron/main.js",
   "author": {

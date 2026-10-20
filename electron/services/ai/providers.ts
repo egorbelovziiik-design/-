@@ -387,8 +387,9 @@ export async function streamChat(auth: ProviderAuth, messages: AIMessage[], hand
       if (!auth.apiKey) throw new Error(`API key required for ${auth.provider.name}. Set it in Settings → AI.`);
       await streamGemini(auth, messages, handlers, opts);
     } else {
-      // openai / openrouter / ollama / lmstudio / custom
-      if (kind === 'openai' && !auth.apiKey) {
+      // openai / openai-compatible / openrouter / ollama / lmstudio / custom
+      const keyRequired = kind === 'openai' || kind === 'openai-compatible' || kind === 'openrouter';
+      if (keyRequired && !auth.apiKey) {
         throw new Error(`API key required for ${auth.provider.name}. Set it in Settings → AI.`);
       }
       await streamOpenAI(auth, messages, handlers, opts);

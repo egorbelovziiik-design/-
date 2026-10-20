@@ -2,8 +2,9 @@
 import { TEMPLATES, generateTemplate, MC_VERSIONS } from '../electron/services/templates';
 import { detectBuildSystem } from '../electron/services/build';
 import { JsonStore } from '../electron/services/store';
+import { PROVIDER_CATALOG, presetToConfig, guessProviderByKey } from '../electron/shared/providers-catalog';
 
-export { TEMPLATES, generateTemplate, MC_VERSIONS, detectBuildSystem, JsonStore };
+export { TEMPLATES, generateTemplate, MC_VERSIONS, detectBuildSystem, JsonStore, PROVIDER_CATALOG, presetToConfig, guessProviderByKey };
 
 export async function runStoreTest(filePath: string): Promise<{ ok: boolean; error?: string }> {
   const store = new JsonStore<{ a: number; b: string }>(filePath, { a: 1, b: 'default' });
