@@ -1,0 +1,104 @@
+{
+  "name": "wincode-ai",
+  "productName": "WinCode AI",
+  "version": "1.0.0",
+  "description": "WinCode AI — professional AI-powered IDE for Windows (Java, Kotlin, Minecraft, Web, AI Agent)",
+  "main": "dist-electron/main.js",
+  "author": "WinCode AI",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run build:renderer && npm run build:electron",
+    "build:renderer": "vite build",
+    "build:electron": "node scripts/build-electron.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.electron.json",
+    "smoke": "node scripts/smoke-test.mjs",
+    "logic": "node scripts/logic-test.mjs",
+    "test": "npm run typecheck && npm run smoke && npm run logic",
+    "dist": "npm run build && electron-builder --win",
+    "dist:setup": "npm run build && electron-builder --win nsis",
+    "dist:portable": "npm run build && electron-builder --win portable",
+    "dist:linux": "npm run build && electron-builder --linux"
+  },
+  "dependencies": {
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-search": "^0.15.0",
+    "@xterm/xterm": "^5.5.0",
+    "framer-motion": "^11.11.0",
+    "lucide-react": "^0.454.0",
+    "monaco-editor": "^0.52.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.0"
+  },
+  "optionalDependencies": {
+    "node-pty": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.0",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.2",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.9"
+  },
+  "build": {
+    "appId": "ai.wincode.desktop",
+    "productName": "WinCode AI",
+    "copyright": "© 2026 WinCode AI",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "build/icon.png",
+      "artifactName": "WinCode-AI-Setup.${ext}",
+      "publisherName": "WinCode AI"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WinCode AI",
+      "artifactName": "WinCode-AI-Setup.${ext}",
+      "uninstallDisplayName": "WinCode AI",
+      "license": null
+    },
+    "portable": {
+      "artifactName": "WinCode-AI-Portable.${ext}"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Development",
+      "artifactName": "WinCode-AI-${arch}.${ext}"
+    }
+  }
+}

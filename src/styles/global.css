@@ -1,0 +1,310 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===================== Theme tokens ===================== */
+:root,
+[data-theme='aurora-dark'] {
+  --wc-bg: #09090f;
+  --wc-panel: #11111b;
+  --wc-editor: #0d0d14;
+  --wc-accent: #9333ea;
+  --wc-neon: #a855f7;
+  --wc-text: #e5e7eb;
+  --wc-muted: #8b8b99;
+  --wc-border: #1f1f2e;
+  --wc-titlebar: #0b0b12;
+  --wc-statusbar: #12121c;
+  --wc-hover: rgba(168, 85, 247, 0.1);
+  --wc-active: rgba(147, 51, 234, 0.18);
+  --wc-shadow: rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
+}
+
+[data-theme='midnight'] {
+  --wc-bg: #04070d;
+  --wc-panel: #0a1120;
+  --wc-editor: #060b14;
+  --wc-accent: #3b82f6;
+  --wc-neon: #60a5fa;
+  --wc-text: #dbe7ff;
+  --wc-muted: #6b7a99;
+  --wc-border: #14213a;
+  --wc-titlebar: #050a13;
+  --wc-statusbar: #0a1424;
+  --wc-hover: rgba(96, 165, 250, 0.1);
+  --wc-active: rgba(59, 130, 246, 0.18);
+  color-scheme: dark;
+}
+
+[data-theme='dracula'] {
+  --wc-bg: #191a21;
+  --wc-panel: #21222c;
+  --wc-editor: #1e1f29;
+  --wc-accent: #bd93f9;
+  --wc-neon: #ff79c6;
+  --wc-text: #f8f8f2;
+  --wc-muted: #7d808f;
+  --wc-border: #2c2e3b;
+  --wc-titlebar: #14151c;
+  --wc-statusbar: #1c1d26;
+  --wc-hover: rgba(189, 147, 249, 0.12);
+  --wc-active: rgba(189, 147, 249, 0.2);
+  color-scheme: dark;
+}
+
+[data-theme='synthwave'] {
+  --wc-bg: #160b24;
+  --wc-panel: #201236;
+  --wc-editor: #1a0e2b;
+  --wc-accent: #e935c1;
+  --wc-neon: #ff2975;
+  --wc-text: #f4e9ff;
+  --wc-muted: #a486c7;
+  --wc-border: #341c52;
+  --wc-titlebar: #12081d;
+  --wc-statusbar: #1c0f2e;
+  --wc-hover: rgba(233, 53, 193, 0.12);
+  --wc-active: rgba(233, 53, 193, 0.2);
+  color-scheme: dark;
+}
+
+[data-theme='solarized'] {
+  --wc-bg: #001e27;
+  --wc-panel: #04313c;
+  --wc-editor: #002b36;
+  --wc-accent: #2aa198;
+  --wc-neon: #b58900;
+  --wc-text: #eee8d5;
+  --wc-muted: #7b8c8f;
+  --wc-border: #0a4250;
+  --wc-titlebar: #00222b;
+  --wc-statusbar: #01313c;
+  --wc-hover: rgba(42, 161, 152, 0.12);
+  --wc-active: rgba(42, 161, 152, 0.2);
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --wc-bg: #f4f5fa;
+  --wc-panel: #ffffff;
+  --wc-editor: #ffffff;
+  --wc-accent: #7c3aed;
+  --wc-neon: #8b5cf6;
+  --wc-text: #171725;
+  --wc-muted: #6b7280;
+  --wc-border: #e3e4ec;
+  --wc-titlebar: #eceef6;
+  --wc-statusbar: #e9ebf5;
+  --wc-hover: rgba(124, 58, 237, 0.08);
+  --wc-active: rgba(124, 58, 237, 0.14);
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--wc-bg);
+  color: var(--wc-text);
+  font-family: 'Segoe UI', Inter, system-ui, sans-serif;
+  font-size: 13px;
+  user-select: none;
+  cursor: default;
+}
+
+/* ===================== Scrollbars ===================== */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 150, 0.28);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.5);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+/* ===================== Common components ===================== */
+.wc-input {
+  @apply rounded-md border px-2.5 py-1.5 text-sm outline-none transition-colors;
+  background: var(--wc-editor);
+  border-color: var(--wc-border);
+  color: var(--wc-text);
+}
+.wc-input:focus {
+  border-color: var(--wc-accent);
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.25);
+}
+
+.wc-btn {
+  @apply inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all;
+  background: var(--wc-panel);
+  color: var(--wc-text);
+  border: 1px solid var(--wc-border);
+}
+.wc-btn:hover {
+  border-color: var(--wc-accent);
+  transform: translateY(-1px);
+}
+.wc-btn:active {
+  transform: translateY(0);
+}
+.wc-btn-primary {
+  background: linear-gradient(135deg, var(--wc-accent), var(--wc-neon));
+  color: white;
+  border: none;
+  box-shadow: 0 4px 18px rgba(147, 51, 234, 0.35);
+}
+.wc-btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(147, 51, 234, 0.5);
+}
+
+.wc-panel {
+  background: var(--wc-panel);
+  border-color: var(--wc-border);
+}
+
+.wc-glow {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.25);
+}
+
+.wc-titlebar {
+  -webkit-app-region: drag;
+}
+.wc-titlebar button,
+.wc-titlebar .no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Monaco container */
+.monaco-editor-parent {
+  height: 100%;
+  width: 100%;
+}
+.monaco-editor .margin,
+.monaco-editor-background {
+  background-color: var(--wc-editor) !important;
+}
+
+/* Xterm */
+.xterm-viewport {
+  background: transparent !important;
+}
+
+/* Animations */
+@keyframes wc-shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--wc-panel) 25%, var(--wc-border) 50%, var(--wc-panel) 75%);
+  background-size: 800px 100%;
+  animation: wc-shimmer 1.4s infinite linear;
+}
+
+@keyframes wc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.spin {
+  animation: wc-spin 0.9s linear infinite;
+}
+
+.pulse-dot {
+  @apply relative;
+}
+.pulse-dot::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 9999px;
+  border: 1px solid var(--wc-neon);
+  animation: wc-ping 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes wc-ping {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/* Text selection inside code/terminal */
+.selectable {
+  user-select: text;
+  cursor: text;
+}
+
+/* Gradient text */
+.grad-text {
+  background: linear-gradient(92deg, var(--wc-neon), var(--wc-accent), var(--wc-neon));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: grad-move 6s linear infinite;
+}
+@keyframes grad-move {
+  to {
+    background-position: 200% center;
+  }
+}
+
+/* Context menu */
+.ctx-menu {
+  @apply min-w-[180px] rounded-lg border p-1 shadow-2xl;
+  background: var(--wc-panel);
+  border-color: var(--wc-border);
+  z-index: 100;
+}
+.ctx-item {
+  @apply flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-1.5 text-[13px];
+  color: var(--wc-text);
+}
+.ctx-item:hover {
+  background: var(--wc-active);
+}
+
+/* Markdown-ish AI text */
+.ai-text p {
+  margin: 0 0 0.55em;
+}
+.ai-text pre {
+  background: var(--wc-editor);
+  border: 1px solid var(--wc-border);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  user-select: text;
+}
+.ai-text code {
+  font-family: 'Cascadia Code', Consolas, monospace;
+  font-size: 12px;
+}
+.ai-text :not(pre) > code {
+  background: var(--wc-active);
+  padding: 1px 5px;
+  border-radius: 4px;
+}

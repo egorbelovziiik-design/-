@@ -1,0 +1,60 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build renderer & main
+        run: npm run build
+
+      - name: Run smoke tests
+        run: npm run smoke
+
+      - name: Build Windows installers (NSIS + Portable)
+        run: npx electron-builder --win --x64
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List artifacts
+        run: |
+          Get-ChildItem -Recurse release | Select-Object FullName, Length
+
+      - name: Upload WinCode-AI-Setup.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinCode-AI-Setup
+          path: release/WinCode-AI-Setup.exe
+          if-no-files-found: error
+
+      - name: Upload WinCode-AI-Portable.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinCode-AI-Portable
+          path: release/WinCode-AI-Portable.exe
+          if-no-files-found: error
+
+      - name: Upload full release directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: wincode-ai-release-full
+          path: release/
+          if-no-files-found: error
