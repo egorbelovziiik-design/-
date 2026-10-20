@@ -9,19 +9,21 @@
 
 ## 📦 Установка (Windows 10 / 11)
 
-Сборка выполняется GitHub Actions (Windows Runner) — вкладка **Actions** → запуск `Build Windows EXE` →
-артефакты:
+**Готовые сборки (GitHub Release `wincode-ai-v1.0.0`, собрано CI на windows-2022):**
 
-| Файл | Назначение |
-|---|---|
-| `WinCode-AI-Setup.exe` | Установщик NSIS: выбор папки, ярлыки, «Пуск», удаление |
-| `WinCode-AI-Portable.exe` | Портативная версия без установки |
+| Файл | Размер | Назначение | Ссылка |
+|---|---|---|---|
+| `WinCode-AI-Setup.exe` | ~100 МБ | Установщик NSIS: выбор папки, ярлыки, меню «Пуск», удаление | [скачать](https://github.com/egorbelovziiik-design/-/releases/download/wincode-ai-v1.0.0/WinCode-AI-Setup.exe) |
+| `WinCode-AI-Portable.exe` | ~84 МБ | Портативная версия без установки | [скачать](https://github.com/egorbelovziiik-design/-/releases/download/wincode-ai-v1.0.0/WinCode-AI-Portable.exe) |
 
-Либо локально на Windows:
+Те же файлы лежат в артефакте запуска Actions `wincode-ai-windows`
+(страница запуска: [Build Windows EXE](https://github.com/egorbelovziiik-design/-/actions/workflows/build-windows.yml)).
+
+Сборка выполняется GitHub Actions (Windows Runner) при каждом push. Локально на Windows:
 
 ```bash
 npm ci
-npm run dist        # соберёт оба EXE в release/
+npm run dist        # соберёт оба EXE в release/WinCode-AI-Setup.exe и release/WinCode-AI-Portable.exe
 ```
 
 ## 🧩 Что реально работает
@@ -83,7 +85,7 @@ npm run logic       # unit-тесты сервисного слоя (шабло�
 
 | Функция | Статус |
 |---|---|
-| Запуск на Windows 10/11 (EXE) | ✅ (сборка через GitHub Actions / `npm run dist` на Windows) |
+| Запуск на Windows 10/11 (EXE) | ✅ `WinCode-AI-Setup.exe` (105 МБ) и `WinCode-AI-Portable.exe` (88 МБ) собраны и опубликованы в [Release](https://github.com/egorbelovziiik-design/-/releases/tag/wincode-ai-v1.0.0) |
 | Создание/открытие проектов, файлы, сохранение | ✅ |
 | Терминал (xterm.js + node-pty) | ✅ |
 | AI Chat + реальные AI-провайдеры + streaming | ✅ |
