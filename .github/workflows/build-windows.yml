@@ -64,8 +64,26 @@ jobs:
           gh release create wincode-ai-v1.0.0 --title "WinCode AI v1.0.0 (Windows)" --notes "WinCode-AI-Setup.exe — installer (NSIS). WinCode-AI-Portable.exe — portable build. Built by CI on windows-latest."
           gh release upload wincode-ai-v1.0.0 release/WinCode-AI-Setup.exe release/WinCode-AI-Portable.exe --clobber
 
+      - name: Post diagnostics to issue #1 (API-readable logs)
+        if: always()
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          $logTail = ""
+          if (Test-Path electron-builder.log) {
+            $content = Get-Content electron-builder.log -Raw
+            if ($content.Length -gt 55000) { $logTail = $content.Substring($content.Length - 55000) } else { $logTail = $content }
+          } else {
+            $logTail = "(electron-builder.log not produced)"
+          }
+          $body = "### CI run $env:RUN_ID diagnostics`n`````n$logTail`n````"
+          gh issue comment 1 --body $body
+
       - name: Commit diagnostics to branch (so logs are visible via git)
         if: always()
+        continue-on-error: true
         shell: pwsh
         env:
           CI_BRANCH: ${{ github.ref_name }}
