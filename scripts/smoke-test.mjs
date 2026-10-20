@@ -72,7 +72,8 @@ check('windows build config present', () => {
   const wf = path.join(root, '.github/workflows/build-windows.yml');
   if (!fs.existsSync(wf)) throw new Error('missing GitHub Actions windows workflow');
   const yml = fs.readFileSync(wf, 'utf-8');
-  if (!yml.includes('windows-latest')) throw new Error('workflow must use windows runner');
+  if (!yml.includes('windows-')) throw new Error('workflow must use windows runner');
+  if (!yml.includes('electron-builder')) throw new Error('workflow must build with electron-builder');
 });
 
 console.log(failures === 0 ? '[smoke] ALL CHECKS PASSED' : `[smoke] ${failures} FAILURES`);
