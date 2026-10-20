@@ -71,15 +71,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          $logTail = ""
+          $logTail = "(electron-builder.log not produced)"
           if (Test-Path electron-builder.log) {
             $content = Get-Content electron-builder.log -Raw
             if ($content.Length -gt 55000) { $logTail = $content.Substring($content.Length - 55000) } else { $logTail = $content }
-          } else {
-            $logTail = "(electron-builder.log not produced)"
           }
-          $body = "### CI run $env:RUN_ID diagnostics`n`````n$logTail`n````"
-          gh issue comment 1 --body $body
+          $fence = [char]0x60 * 3
+          $md = "### CI run $env:RUN_ID diagnostics" + "`n" + $fence + "`n" + $logTail + "`n" + $fence + "`n"
+          [System.IO.File]::WriteAllText("$env:RUNNER_TEMP\diag.md", $md)
+          gh issue comment 1 --repo "${{ github.repository }}" --body-file "$env:RUNNER_TEMP\diag.md"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "issue comment failed, trying Contents API"
+            $b64 = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes("electron-builder.log"))
+            $json = '{"message":"CI diagnostics run ' + $env:RUN_ID + '","content":"' + $b64 + '"}'
+            [System.IO.File]::WriteAllText("$env:RUNNER_TEMP\payload.json", $json)
+            gh api -X PUT "repos/${{ github.repository }}/contents/ci-log-$env:RUN_ID.txt" -F "message=CI diagnostics" -F "content=@electron-builder.log" 2>&1 | Out-String | Write-Host
+          }
 
       - name: Commit diagnostics to branch (so logs are visible via git)
         if: always()
