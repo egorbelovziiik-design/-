@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #09090F;
+  --color-panel: #11111B;
+  --color-editor: #0D0D14;
+  --color-accent: #9333EA;
+  --color-accent2: #A855F7;
+  --color-text: #E5E7EB;
+  --color-muted: #8B8B9E;
+  --color-border: #1F1F2E;
+  --color-hover: #171726;
+  --color-selected: #1E1B33;
+}
+
+html, body, #root { height: 100%; background: var(--color-bg); color: var(--color-text); }
+body { font-family: 'Segoe UI', Inter, system-ui, sans-serif; overflow: hidden; user-select: none; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { background: #2A2A3F; border-radius: 5px; }
+*::-webkit-scrollbar-thumb:hover { background: #3B3B55; }
+*::-webkit-scrollbar-corner, *::-webkit-scrollbar-track { background: transparent; }
+.drag-region { -webkit-app-region: drag; }
+.no-drag { -webkit-app-region: no-drag; }
+.monaco-editor, .monaco-editor * { user-select: text; }
+input, textarea, select { user-select: text; }
+.xterm { padding: 6px 8px; }
+.md pre { background:#14141F; border:1px solid #23233A; border-radius:8px; padding:10px; overflow:auto; font-size:12px; }
+.md code { font-family:'JetBrains Mono', Consolas, monospace; font-size:12px; }
+.md p { margin: 4px 0; }
+@keyframes pulse-dot { 0%,100%{opacity:.25} 50%{opacity:1} }
+.typing-dot { animation: pulse-dot 1.2s infinite; }
